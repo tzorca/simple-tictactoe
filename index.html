@@ -14,14 +14,21 @@
 	.ttt-backdrop {
 		background-color: black;
 		display: inline-block;
+    vertical-align: middle;
+    margin: 0px;
+    padding: 0px;
 	}
 
 	.ttt-cell {
 		background-color: white;
-		border: 1px black solid;
+    margin-bottom: 2px;
+    margin-top: 2px;
 		display: inline-block;
-		width: 100px;
-		height: 100px;
+		width: 100px !important;
+    vertical-align: middle;
+    text-align: center;
+    font-size: 64px;
+		height: 100px !important;
 		/* TODO: Make responsive */
 	}
 </style>
@@ -48,7 +55,21 @@
 
 </div>
 
-<script>  
+<script>
+  function updateGridView(gridState) {
+    for (var rowIdx = 0; rowIdx < gridState.length; rowIdx++) {
+      var row = gridState[rowIdx];
+      for (var colIdx = 0; colIdx < row.length; colIdx++) {
+        var cellVal = row[colIdx];
+        var $cell = $(".ttt-cell" +
+          "[data-col='" + colIdx + "']" + 
+          "[data-row='" + rowIdx + "']");
+
+        $cell.text(cellVal);
+      }
+    }
+  }
+
   $(function() {
 		var ticTacToeGame = new TicTacToeGame(3, 3);
 		
@@ -56,6 +77,8 @@
   	$(".ttt-cell").click(function() {
   		var col = $(this).data("col");
   		var row = $(this).data("row");
+      ticTacToeGame.makeMove(row, col);
+      updateGridView(ticTacToeGame.getGridState());
   	});
   });
 </script>
