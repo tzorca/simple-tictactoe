@@ -5,6 +5,7 @@
   <script src="lib/jquery-3.2.1.min.js"></script>
   <script src="lib/bootstrap.min.js"></script>
   <script src="lib/moment.js"></script>
+  <script src="code/util.js"></script>
   <script src="code/TicTacToeGame.js"></script>
 
 </head>
@@ -12,7 +13,6 @@
 
 <style>
 	.ttt-backdrop {
-		background-color: black;
 		display: inline-block;
     vertical-align: middle;
     margin: 0px;
@@ -21,8 +21,8 @@
 
 	.ttt-cell {
 		background-color: white;
-    margin-bottom: 2px;
-    margin-top: 2px;
+    border: 1px black solid;
+    margin-top: 4px;
 		display: inline-block;
 		width: 100px !important;
     vertical-align: middle;
@@ -71,14 +71,15 @@
   }
 
   $(function() {
-		var ticTacToeGame = new TicTacToeGame(3, 3);
-		
+		var ticTacToeGame = new TicTacToeGame(3, 3, function() {
+      updateGridView(ticTacToeGame.getGridState());
+    });
 
   	$(".ttt-cell").click(function() {
   		var col = $(this).data("col");
   		var row = $(this).data("row");
-      ticTacToeGame.makeMove(row, col);
-      updateGridView(ticTacToeGame.getGridState());
+      ticTacToeGame.makeMove(row, col, /*isHuman:*/ true);
+      
   	});
   });
 </script>
