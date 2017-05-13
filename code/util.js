@@ -5,3 +5,14 @@ function getRandomInt(min, max) {
   max = Math.floor(max);
   return Math.floor(Math.random() * (max - min)) + min;
 }
+
+// Sourced from http://stackoverflow.com/a/14832662
+Array.prototype.allValuesSame = function() {
+  for(var i = 1; i < this.length; i++)
+  {
+    if(this[i] !== this[0]) {
+      return false;
+    }
+  }
+  return true;
+}
