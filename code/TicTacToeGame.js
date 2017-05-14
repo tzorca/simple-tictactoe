@@ -1,4 +1,4 @@
-var TicTacToeGame = function(gridWidth, gridHeight, callbackAfterUpdate) {
+var TicTacToeGame = function(gridWidth, gridHeight) {
 
 	var EMPTY_SYMBOL = "";
 
@@ -53,6 +53,14 @@ var TicTacToeGame = function(gridWidth, gridHeight, callbackAfterUpdate) {
 		}
 	};
 
+  internal.makeComputerMoveIfComputerTurn = function() {
+    if (!internal.turnPlayerIsHuman(internal.currentState)) {
+      window.setTimeout(function() {
+        internal.makeComputerMove();  
+      }, 500);
+    }
+  };
+
 	internal.minimax = function(targetPlayerIndex, gameState, depth) {
 		if (self.gameIsOver(gameState.board)) {
 	    return {
@@ -99,12 +107,18 @@ var TicTacToeGame = function(gridWidth, gridHeight, callbackAfterUpdate) {
 			return;
 		}
 
-		var bestMoveScore = internal.minimax(internal.currentState.playerIndex, internal.currentState, 0);
-    console.log(bestMoveScore);
-		// var moveIdx = getRandomInt(0, validMoves.length);
-		// var move = validMoves[moveIdx];
+    if (validMoves.length == gridWidth * gridHeight) {
+      // Start of game, just pick a square
+      var moveIdx = getRandomInt(0, validMoves.length);
+      var move = validMoves[moveIdx];
+    } else {
+      // Make an intelligent move
+  		var bestMoveScore = internal.minimax(internal.currentState.playerIndex, internal.currentState, 0);
+      console.log(bestMoveScore);
+      var move = bestMoveScore.move;
+    }
 
-		self.makeMove(bestMoveScore.move[0], bestMoveScore.move[1], /*isHuman:*/ false);
+    self.makeMove(move[0], move[1], /*isHuman:*/ false);  
 	};
 
 	internal.updateGameStateForMove = function(gameState, row, col) {
@@ -112,8 +126,19 @@ var TicTacToeGame = function(gridWidth, gridHeight, callbackAfterUpdate) {
 		internal.switchTurnPlayer(gameState);
 	};
 
+	self.updatePlayers = function(newPlayers) {
+		internal.players = deepClone(newPlayers);
+	};
+
+	self.callbackAfterUpdate = function() {
+	};
 
 	self.resetGame = function() {
+		// Set starting player
+		internal.currentState.playerIndex = 0;
+
+		// Reset grid
+		internal.currentState.board = [];
 		for (var vIdx = 0; vIdx < gridHeight; vIdx++) {
 			var gridRow = [];
 			for (var hIdx = 0; hIdx < gridWidth; hIdx++) {
@@ -121,6 +146,9 @@ var TicTacToeGame = function(gridWidth, gridHeight, callbackAfterUpdate) {
 			}
 			internal.currentState.board.push(gridRow);
 		}
+		self.callbackAfterUpdate();
+
+    internal.makeComputerMoveIfComputerTurn();
 	};
 
 	self.resetGame();
@@ -232,24 +260,22 @@ var TicTacToeGame = function(gridWidth, gridHeight, callbackAfterUpdate) {
 
 		internal.updateGameStateForMove(internal.currentState, row, col);
 
-		callbackAfterUpdate();
+		self.callbackAfterUpdate();
 
 		console.log("now turn " + internal.getSymbolForTurn(internal.currentState));
 
 		if (self.gameIsOver(internal.currentState.board)) {
 			console.log("Game is over!");
 			var winningSymbol = self.getWinningSymbol(internal.currentState.board);
-			if (winningSymbol != null) {
-				alert(winningSymbol + " wins!");
+			if (winningSymbol == null) {
+        alert("Cat's game.");
+      } else {
+				alert(winningSymbol.toUpperCase() + " wins!");
 			}
-			return;
-		}
-
-		if (!internal.turnPlayerIsHuman(internal.currentState)) {
-			window.setTimeout(function() {
-				internal.makeComputerMove();	
-			}, 500);
-		}
+      self.resetGame();
+		} else {
+      internal.makeComputerMoveIfComputerTurn();
+    }
 	};
 
 	self.getBoardState = function() {

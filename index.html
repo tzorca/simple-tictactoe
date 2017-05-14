@@ -15,8 +15,13 @@
 	.ttt-backdrop {
 		display: inline-block;
     vertical-align: middle;
+    text-align: center;
     margin: 0px;
     padding: 0px;
+	}
+
+	.title {
+		text-align: center;
 	}
 
 	.ttt-cell {
@@ -35,20 +40,63 @@
 
 <div class="container">
   
-  <h4>Tic Tac Toe</h4>
+  <h3 class="title">Tic Tac Toe</h3>
 
   <br />
 
   <ul class="nav nav-tabs">
     <li class="active"><a data-toggle="tab" href="#tab-settings">Settings</a></li>
-    <li><a data-toggle="tab" href="#tab-game">Game</a></li>
+    <li><a data-toggle="tab" id="tab-game-nav" href="#tab-game">Game</a></li>
   </ul>
 
   <div class="tab-content">
 
     <div id="tab-settings" class="tab-pane fade in active">
-      <br />  
-      <div>Settings</div>
+      <table>
+	      <tr><td><h4>Player 1</h4></td></tr>
+        <tr>
+          <td>Type:&nbsp;</td>
+          <td>
+            <select class="form-control" id="player1-type">
+              <option selected value="human">Human</option>
+              <option value="cpu">Computer</option>
+            </select>
+          </td>
+        </tr>
+				<tr>
+	      	<td>Symbol:&nbsp;</td>
+	      	<td>
+	      		<select class="form-control" id="player1-symbol">
+	      			<option selected value="X">X</option>
+	      			<option value="O">O</option>
+	      		</select>
+	      	</td>
+	      </tr>
+	      <tr>
+	      <td>&nbsp;</td>
+	      </tr>
+	      <tr><td><h4>Player 2</h4></td></tr>
+	      <tr>
+	      	<td>Type:&nbsp;</td>
+	      	<td>
+	      		<select class="form-control" id="player2-type">
+	      			<option value="human">Human</option>
+	      			<option selected value="cpu">Computer</option>
+	      		</select>
+	      	</td>
+	      </tr>
+        <tr>
+          <td>Symbol:&nbsp;</td>
+          <td>
+            <select class="form-control" id="player2-symbol">
+              <option value="X">X</option>
+              <option selected value="O">O</option>
+            </select>
+          </td>
+        </tr>
+      </table>
+      <br />
+      <a id="start-new-game" class="btn btn-primary">Start New Game</a>
     </div>
 
     <div id="tab-game" class="tab-pane fade">
@@ -88,19 +136,86 @@
     }
   }
 
+  function player1IsHuman() {
+    return $("#player1-type").val() == "human";
+  }
+
+  function player2IsHuman() {
+    return $("#player2-type").val() == "human";
+  }
+
   $(function() {
-		var ticTacToeGame = new TicTacToeGame(3, 3, function() {
+		var ticTacToeGame = new TicTacToeGame(3, 3);
+		ticTacToeGame.callbackAfterUpdate = function() {
       updateGridView(ticTacToeGame.getBoardState());
-    });
+    };
 
   	$(".ttt-cell").click(function() {
   		var col = $(this).data("col");
   		var row = $(this).data("row");
       ticTacToeGame.makeMove(row, col, /*isHuman:*/ true);
-      
+  	});
+
+    $("#player1-symbol").change(function() {
+      var player1Symbol = $(this).val().toUpperCase();
+      if (player1Symbol == "X") {
+        $("#player2-symbol").val("O");
+      } else {
+        $("#player2-symbol").val("X");
+      }
+    });
+
+    $("#player2-symbol").change(function() {
+      var player2Symbol = $(this).val().toUpperCase();
+      if (player2Symbol == "X") {
+        $("#player1-symbol").val("O");
+      } else {
+        $("#player1-symbol").val("X");
+      }
+    });
+
+    $("#player1-type").change(function() {
+      if (!player1IsHuman()) {
+        $("#player2-type").val("human");
+      }
+    });
+
+    $("#player2-type").change(function() {
+      if (!player2IsHuman()) {
+        $("#player1-type").val("human");
+      }
+    });
+
+  	$("#start-new-game").click(function() {
+      if (!player1IsHuman() && !player2IsHuman()) {
+        alert("Cannot start a game with two computers.");
+        return;
+      }
+
+      var player1Symbol = $("#player1-symbol").val();
+      var player2Symbol = $("#player2-symbol").val();
+
+      if (player1Symbol == player2Symbol) {
+        alert("Cannot start a game with both players using the same symbol " + player1Symbol);
+        return;
+      }
+
+  		var settingsPlayers = [{
+	  			isHuman: player1IsHuman(),
+	  			symbol: player1Symbol
+	  		},{
+	  			isHuman: player2IsHuman(),
+	  			symbol: player2Symbol
+  		}];
+
+  		ticTacToeGame.updatePlayers(settingsPlayers);
+  		ticTacToeGame.resetGame();
+
+      $("#tab-game-nav").click();
   	});
   });
 </script>
 </body>
 </html>
+
 
