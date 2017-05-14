@@ -16,3 +16,7 @@ Array.prototype.allValuesSame = function() {
   }
   return true;
 }
+
+function deepClone(obj) {
+	return JSON.parse(JSON.stringify(obj));
+}

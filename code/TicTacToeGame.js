@@ -1,9 +1,11 @@
-var TicTacToeGame = function(gridWidth, gridHeight, updateCallback) {
-	var self = this;
+var TicTacToeGame = function(gridWidth, gridHeight, callbackAfterUpdate) {
 
 	var EMPTY_SYMBOL = "";
 
-	var players = [
+	var self = this;
+	var internal = {};
+
+	internal.players = [
 		{
 			symbol: "X",
 			isHuman: true
@@ -14,16 +16,102 @@ var TicTacToeGame = function(gridWidth, gridHeight, updateCallback) {
 		}
 	];
 	
-	var currentPlayerIndex = 0;
-	var currentBoard = [];
+	internal.currentState = {
+		playerIndex: 0,
+		board: []
+	};
 
-	var incrementCurrentPlayer = function() {
-		if (currentPlayerIndex >= players.length - 1) {
-			currentPlayerIndex = 0;
+	internal.switchTurnPlayer = function(gameState) {
+		if (gameState.playerIndex >= internal.players.length - 1) {
+			gameState.playerIndex = 0;
 		} else {
-			currentPlayerIndex++;
+			gameState.playerIndex++;
 		}
 	};
+
+	internal.getSymbolForTurn = function(gameState) {
+		return internal.players[gameState.playerIndex].symbol;
+	};
+
+	internal.turnPlayerIsHuman = function(gameState) {
+		return internal.players[gameState.playerIndex].isHuman;
+	};
+
+	internal.getBoardScore = function(targetPlayerIndex, board, depth) {
+		var playerSymbol = internal.players[targetPlayerIndex].symbol;
+
+		var winningSymbol = self.getWinningSymbol(board);
+		if (winningSymbol == null) {
+			// No winner
+			return 0;
+		} else if (winningSymbol == playerSymbol) {
+			// The specified player has won
+			return 10 - depth;
+		} else {
+			// The opponent of the specified player has won
+			return depth - 10;
+		}
+	};
+
+	internal.minimax = function(targetPlayerIndex, gameState, depth) {
+		if (self.gameIsOver(gameState.board)) {
+	    return {
+        score: internal.getBoardScore(targetPlayerIndex, gameState.board, depth)
+      };
+	  }
+
+    depth++;
+    var moveScores = [];
+
+    var validMoves = self.getValidMoves(gameState.board);
+    if (!validMoves.length) {
+      return 0;
+    }
+
+    validMoves.forEach(function(move) {
+    	var possibleGameState = deepClone(gameState);
+      internal.updateGameStateForMove(possibleGameState, move[0], move[1]);
+      var moveScore = internal.minimax(targetPlayerIndex, possibleGameState, depth);
+      moveScore.move = move;
+
+    	moveScores.push(moveScore);
+    });
+
+    if (gameState.playerIndex == targetPlayerIndex) {
+        // Max
+        moveScores.sort(function(a, b) {
+          return b.score - a.score;
+        });
+    } else {
+        // Min
+        moveScores.sort(function(a, b) {
+          return a.score - b.score;
+        });
+    }
+
+    return moveScores[0];
+	};
+
+	internal.makeComputerMove = function() {
+		var validMoves = self.getValidMoves(internal.currentState.board);
+		if (validMoves.length == 0) {
+			console.log("No valid moves left.");
+			return;
+		}
+
+		var bestMoveScore = internal.minimax(internal.currentState.playerIndex, internal.currentState, 0);
+    console.log(bestMoveScore);
+		// var moveIdx = getRandomInt(0, validMoves.length);
+		// var move = validMoves[moveIdx];
+
+		self.makeMove(bestMoveScore.move[0], bestMoveScore.move[1], /*isHuman:*/ false);
+	};
+
+	internal.updateGameStateForMove = function(gameState, row, col) {
+		gameState.board[row][col] = internal.getSymbolForTurn(gameState);
+		internal.switchTurnPlayer(gameState);
+	};
+
 
 	self.resetGame = function() {
 		for (var vIdx = 0; vIdx < gridHeight; vIdx++) {
@@ -31,19 +119,11 @@ var TicTacToeGame = function(gridWidth, gridHeight, updateCallback) {
 			for (var hIdx = 0; hIdx < gridWidth; hIdx++) {
 				gridRow.push(EMPTY_SYMBOL);
 			}
-			currentBoard.push(gridRow);
+			internal.currentState.board.push(gridRow);
 		}
 	};
 
 	self.resetGame();
-
-	self.getCurrentSymbol = function() {
-		return players[currentPlayerIndex].symbol;
-	};
-
-	self.currentPlayerIsHuman = function() {
-		return players[currentPlayerIndex].isHuman;
-	};
 
 	self.gameIsOver = function(board) {
 		if (self.getValidMoves(board).length == 0) {
@@ -52,10 +132,7 @@ var TicTacToeGame = function(gridWidth, gridHeight, updateCallback) {
 
 		var winningPlayer = self.getWinningSymbol(board);
 
-		if (winningPlayer != null) {
-			return true;
-		}
-		return false;
+		return winningPlayer != null;
 	};
 
 	self.getWinningSymbol = function(board) {
@@ -100,18 +177,6 @@ var TicTacToeGame = function(gridWidth, gridHeight, updateCallback) {
 		return null;
 	};
 
-	var makeComputerMove = function() {
-		var validMoves = self.getValidMoves(currentBoard);
-		if (validMoves.length == 0) {
-			console.log("No valid moves left.");
-			return;
-		}
-		var moveIdx = getRandomInt(0, validMoves.length);
-		var move = validMoves[moveIdx];
-
-		self.makeMove(move[0], move[1], /*isHuman:*/ false);
-	};
-
 	self.getValidMoves = function(board) {
 		var validMoves = [];
 		for (var rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
@@ -124,8 +189,8 @@ var TicTacToeGame = function(gridWidth, gridHeight, updateCallback) {
 		return validMoves;
 	};
 
-	self.playerTypeIsValid = function(isHuman) {
-		if (self.currentPlayerIsHuman() != isHuman) {
+	self.playerTypeIsValid = function(isHuman, gameState) {
+		if (internal.turnPlayerIsHuman(gameState) != isHuman) {
 			console.log("wrong type of player for this move (human for computer move or computer for human move)")
 			return false;
 		}
@@ -148,47 +213,46 @@ var TicTacToeGame = function(gridWidth, gridHeight, updateCallback) {
 		return true;
 	};
 
+
 	self.makeMove = function(row, col, isHuman) {
-		if (self.gameIsOver(currentBoard)) {
+		if (self.gameIsOver(internal.currentState.board)) {
 			alert("The game is over.");
 			return;
 		}
 
-		if (!self.playerTypeIsValid(isHuman) && isHuman) {
+		if (!self.playerTypeIsValid(isHuman, internal.currentState) && isHuman) {
 			alert("It's the computer's turn right now.");
 			return;
 		}
 
-		if (!self.moveIsValid(currentBoard, row, col)) {
+		if (!self.moveIsValid(internal.currentState.board, row, col)) {
 			alert("Invalid move.");
 			return;
 		}
 
-		currentBoard[row][col] = self.getCurrentSymbol();
+		internal.updateGameStateForMove(internal.currentState, row, col);
 
-		incrementCurrentPlayer();
+		callbackAfterUpdate();
 
-		updateCallback();
-		console.log("now turn " + self.getCurrentSymbol());
+		console.log("now turn " + internal.getSymbolForTurn(internal.currentState));
 
-		if (self.gameIsOver(currentBoard)) {
+		if (self.gameIsOver(internal.currentState.board)) {
 			console.log("Game is over!");
-			var winningSymbol = self.getWinningSymbol(currentBoard);
+			var winningSymbol = self.getWinningSymbol(internal.currentState.board);
 			if (winningSymbol != null) {
 				alert(winningSymbol + " wins!");
 			}
 			return;
 		}
 
-		if (!self.currentPlayerIsHuman()) {
+		if (!internal.turnPlayerIsHuman(internal.currentState)) {
 			window.setTimeout(function() {
-				makeComputerMove();	
-			}, 1000);
+				internal.makeComputerMove();	
+			}, 500);
 		}
 	};
 
 	self.getBoardState = function() {
-		return JSON.parse(JSON.stringify(currentBoard));
+		return deepClone(internal.currentState.board);
 	};
-
 };
